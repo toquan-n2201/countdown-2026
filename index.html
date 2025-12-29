@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Countdown 2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    overflow:hidden;
+    background:radial-gradient(circle at bottom,#020111,#000);
+    font-family:'Segoe UI',sans-serif;
+    color:white;
+}
+
+/* Sao */
+.stars{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:url('https://i.imgur.com/6YV1K2A.png') repeat;
+    animation:moveStars 200s linear infinite;
+}
+@keyframes moveStars{
+    from{background-position:0 0;}
+    to{background-position:-10000px 5000px;}
+}
+
+/* Countdown */
+#countdown{
+    position:absolute;
+    top:40%;
+    width:100%;
+    text-align:center;
+    font-size:52px;
+    font-weight:bold;
+    text-shadow:0 0 20px cyan;
+    z-index:3;
+}
+
+/* 5s cuối */
+.big{
+    font-size:160px !important;
+    animation:pulse 1s infinite;
+    color:#00ffff;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1); text-shadow:0 0 20px cyan;}
+    50%{transform:scale(1.1); text-shadow:0 0 60px cyan;}
+    100%{transform:scale(1);}
+}
+
+/* Final */
+#final{
+    display:none;
+    position:absolute;
+    top:30%;
+    width:100%;
+    text-align:center;
+    z-index:3;
+}
+
+#final h1{
+    font-size:72px;
+    color:gold;
+    text-shadow:0 0 30px gold;
+    animation:fadeDown 2s ease;
+}
+
+#final p{
+    margin-top:20px;
+    font-size:32px;
+    font-style:italic;
+    color:#ffcccc;
+    opacity:0;
+    animation:fadeUp 2s ease 2s forwards;
+}
+
+@keyframes fadeDown{
+    from{opacity:0; transform:translateY(-50px);}
+    to{opacity:1; transform:translateY(0);}
+}
+@keyframes fadeUp{
+    from{opacity:0; transform:translateY(30px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+/* Canvas */
+canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:2;
+}
+</style>
+</head>
+
+<body>
+<div class="stars"></div>
+
+<div id="countdown"></div>
+
+<div id="final">
+    <h1>🎆 Happy New Year 2026 🎆</h1>
+    <p>dear 2026, đi có người nhớ, ở có người thương</p>
+</div>
+
+<canvas id="fireworks"></canvas>
+
+<audio id="music" src="https://cdn.pixabay.com/audio/2022/12/22/audio_2c9f8c0a30.mp3"></audio>
+
+<script>
+/* ===== COUNTDOWN ===== */
+const cd=document.getElementById("countdown");
+const final=document.getElementById("final");
+const music=document.getElementById("music");
+const target=new Date("2026-01-01T00:00:00").getTime();
+
+function update(){
+    const now=Date.now();
+    const diff=target-now;
+
+    if(diff<=0){
+        cd.style.display="none";
+        final.style.display="block";
+        music.play();
+        startFireworks();
+        clearInterval(t);
+        return;
+    }
+
+    const s=Math.floor(diff/1000);
+    if(s<=5){
+        cd.className="big";
+        cd.innerHTML=s;
+    }else{
+        cd.className="";
+        const d=Math.floor(diff/(1000*60*60*24));
+        const h=Math.floor((diff/(1000*60*60))%24);
+        const m=Math.floor((diff/60000)%60);
+        const sec=Math.floor((diff/1000)%60);
+        cd.innerHTML=`${d} ngày ${h} giờ ${m} phút ${sec} giây`;
+    }
+}
+const t=setInterval(update,1000);
+update();
+
+/* ===== FIREWORKS ===== */
+const canvas = document.getElementById("fireworks");
+const ctx = canvas.getContext("2d");
+
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+window.onresize = () => {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+};
+
+let particles = [];
+
+function random(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function createFirework3D() {
+    const x = random(-200, 200);
+    const y = random(-200, 200);
+    const z = random(200, 600);
+
+    const baseX = canvas.width / 2;
+    const baseY = canvas.height / 2;
+
+    const hue = random(0, 360);
+
+    for (let i = 0; i < 150; i++) {
+        particles.push({
+            x, y, z,
+            vx: random(-3, 3),
+            vy: random(-3, 3),
+            vz: random(-3, 3),
+            life: 120,
+            hue
+        });
+    }
+}
+
+function project3D(p) {
+    const scale = 300 / (300 + p.z);
+    return {
+        x: p.x * scale + canvas.width / 2,
+        y: p.y * scale + canvas.height / 2,
+        size: scale * 3
+    };
+}
+
+function animate3D() {
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach((p, i) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.z += p.vz;
+        p.life--;
+
+        const pos = project3D(p);
+
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, pos.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${p.hue},100%,60%)`;
+        ctx.fill();
+
+        if (p.life <= 0) particles.splice(i, 1);
+    });
+
+    requestAnimationFrame(animate3D);
+}
+
+function startFireworks() {
+    animate3D();
+    setInterval(createFirework3D, 500);
+}
+
+</script>
+</body>
+</html>
